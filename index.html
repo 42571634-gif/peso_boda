@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Registro de peso</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <section id="lockScreen" class="lock-screen" aria-label="Acceso privado">
+      <div class="lock-card">
+        <img src="./assets/couple-scale.svg" alt="" class="lock-art" />
+        <p class="eyebrow">Alberto & Carla</p>
+        <h1>Peso Boda 2027</h1>
+        <form id="accessForm" class="access-form">
+          <label>
+            Key de acceso
+            <input id="accessKeyInput" type="password" autocomplete="current-password" placeholder="Ingresa la key" required />
+          </label>
+          <button class="primary-button" type="submit">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15 7a4 4 0 1 0-3.2 6.2L9 16v3h3l2.7-2.8A4 4 0 0 0 15 7Z" />
+              <path d="M18 11l3-3" />
+            </svg>
+            Entrar
+          </button>
+          <p id="accessError" class="access-error" role="alert"></p>
+        </form>
+      </div>
+    </section>
+
+    <main class="app-shell">
+      <header class="topbar">
+        <section>
+          <p class="eyebrow">Alberto & Carla</p>
+          <h1>Peso Boda 2027</h1>
+          <p class="hero-copy">Seguimiento privado con historial por fecha, graficos evolutivos y respaldo en Google Sheets.</p>
+        </section>
+        <img src="./assets/progress-rings.svg" alt="" class="hero-art" />
+        <section class="sync-panel" aria-live="polite">
+          <span id="syncDot" class="sync-dot pending"></span>
+          <div>
+            <strong id="syncState">Sin configurar</strong>
+            <span id="syncDetail">Conecta Google Sheets para sincronizar.</span>
+          </div>
+          <button id="syncNowBtn" class="icon-button" type="button" title="Sincronizar ahora" aria-label="Sincronizar ahora">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21 12a9 9 0 0 1-15.3 6.4M3 12A9 9 0 0 1 18.3 5.6" />
+              <path d="M21 5v7h-7M3 19v-7h7" />
+            </svg>
+          </button>
+          <button id="lockAccessBtn" class="icon-button quiet" type="button" title="Bloquear acceso guardado" aria-label="Bloquear acceso guardado">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="5" y="11" width="14" height="10" rx="2" />
+              <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+            </svg>
+          </button>
+        </section>
+      </header>
+
+      <section class="layout">
+        <aside class="entry-panel">
+          <form id="weightForm" class="form-stack">
+            <div class="section-title">
+              <h2>Nuevo registro</h2>
+            </div>
+
+            <label>
+              Persona
+              <select id="personInput" required>
+                <option value="Alberto">Alberto</option>
+                <option value="Carla">Carla</option>
+              </select>
+            </label>
+
+            <label>
+              Fecha
+              <input id="dateInput" type="date" required />
+            </label>
+
+            <label>
+              Peso (kg)
+              <input id="weightInput" type="number" min="20" max="250" step="0.1" inputmode="decimal" required />
+            </label>
+
+            <label>
+              Nota
+              <textarea id="noteInput" rows="3" placeholder="Opcional"></textarea>
+            </label>
+
+            <button class="primary-button" type="submit">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Registrar peso
+            </button>
+          </form>
+
+          <section class="settings-panel">
+            <div class="section-title">
+              <h2>Google Sheets</h2>
+            </div>
+            <label>
+              URL de Apps Script
+              <input id="endpointInput" type="url" placeholder="https://script.google.com/macros/s/.../exec" />
+            </label>
+            <button id="saveEndpointBtn" class="secondary-button" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+                <path d="M17 21v-8H7v8M7 3v5h8" />
+              </svg>
+              Guardar conexion
+            </button>
+          </section>
+        </aside>
+
+        <section class="main-panel">
+          <section class="stats-grid" aria-label="Resumen">
+            <article>
+              <span>Alberto</span>
+              <strong id="statMe">-- kg</strong>
+              <small id="trendMe">Sin datos</small>
+            </article>
+            <article>
+              <span>Carla</span>
+              <strong id="statPartner">-- kg</strong>
+              <small id="trendPartner">Sin datos</small>
+            </article>
+            <article>
+              <span>Registros activos</span>
+              <strong id="statCount">0</strong>
+              <small id="pendingCount">0 pendientes</small>
+            </article>
+          </section>
+
+          <section class="chart-section">
+            <div class="section-title">
+              <h2>Evolucion</h2>
+              <div class="segmented" role="group" aria-label="Filtro de persona">
+                <button class="active" data-filter="Todos" type="button">Todos</button>
+                <button data-filter="Alberto" type="button">Alberto</button>
+                <button data-filter="Carla" type="button">Carla</button>
+              </div>
+            </div>
+            <div id="chart" class="chart" role="img" aria-label="Grafico evolutivo de peso"></div>
+          </section>
+
+          <section class="records-section">
+            <div class="section-title">
+              <h2>Historial</h2>
+              <button id="exportBtn" class="secondary-button compact" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <path d="M7 10l5 5 5-5M12 15V3" />
+                </svg>
+                CSV
+              </button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Persona</th>
+                    <th>Peso</th>
+                    <th>Estado</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="recordsBody"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <template id="emptyTemplate">
+      <tr>
+        <td colspan="5" class="empty-cell">Aun no hay registros.</td>
+      </tr>
+    </template>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
