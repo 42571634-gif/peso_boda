@@ -125,10 +125,16 @@
     setSync("Sincronizando", syncLabel(reason), "pending");
     try {
       const pending = state.records.filter((r) => r.pendingAction).map(cleanRecord);
+      const sent = new Map(pending.map((r) => [r.id, `${r.status}-${r.updatedAt}`]));
       const data = await jsonp(state.endpoint, { action: "sync", key: localStorage.getItem(LS.key) || "", clientTime: new Date().toISOString(), records: pending });
       if (!data.ok) throw new Error(data.error || "Respuesta invalida");
       merge(data.records || []);
-      state.records.forEach((r) => { r.pendingAction = ""; r.syncedAt = new Date().toISOString(); });
+      state.records.forEach((r) => {
+        if (sent.get(r.id) === `${r.status}-${r.updatedAt}`) {
+          r.pendingAction = "";
+          r.syncedAt = new Date().toISOString();
+        }
+      });
       save();
       setSync("Sincronizado", `Ultima sincronizacion ${new Intl.DateTimeFormat("es-PE", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date())}`, "ok");
     } catch (err) {
@@ -136,6 +142,7 @@
     } finally {
       state.syncing = false;
       render();
+      if (state.records.some((r) => r.pendingAction)) sync("manual");
     }
   }
 
@@ -162,7 +169,17 @@
       if (!r.id) return;
       const normalized = normalizeRemote(r);
       const local = map.get(normalized.id);
-      if (!local || (!local.pendingAction && Date.parse(normalized.updatedAt) > Date.parse(local.updatedAt || ""))) map.set(normalized.id, normalized);
+      if (!local) {
+        map.set(normalized.id, normalized);
+        return;
+      }
+      const localTime = Date.parse(local.updatedAt || "");
+      const remoteTime = Date.parse(normalized.updatedAt || "");
+      if (!local.pendingAction && remoteTime > localTime) {
+        map.set(normalized.id, normalized);
+      } else if (!local.pendingAction && localTime > remoteTime && local.status !== normalized.status) {
+        local.pendingAction = local.status === "annulled" ? "annul" : "upsert";
+      }
     });
     state.records = [...map.values()];
   }
@@ -196,7 +213,7 @@
     }
     const w = 900, h = 340, pad = { l: 54, r: 28, t: 36, b: 46 };
     const dates = records.map((r) => parseDate(r.date));
-    const weights = records.map((r) => Number(r.weight));
+    const weights = records.map((r) => r.weight);
     const minD = Math.min(...dates), maxD = Math.max(...dates), minW = Math.floor(Math.min(...weights) - 1), maxW = Math.ceil(Math.max(...weights) + 1);
     const x = (d) => pad.l + ((d - minD) / Math.max(1, maxD - minD)) * (w - pad.l - pad.r);
     const y = (kg) => h - pad.b - ((kg - minW) / Math.max(1, maxW - minW)) * (h - pad.t - pad.b);
