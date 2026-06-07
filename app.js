@@ -211,21 +211,28 @@
       el.chart.innerHTML = '<div class="chart-empty">Registra un peso para ver la evolucion.</div>';
       return;
     }
-    const w = 900, h = 340, pad = { l: 54, r: 28, t: 36, b: 46 };
+    const w = 900, h = 320, pad = { l: 62, r: 28, t: 28, b: 42 };
     const dates = records.map((r) => parseDate(r.date));
     const weights = records.map((r) => r.weight);
-    const minD = Math.min(...dates), maxD = Math.max(...dates), minW = Math.floor(Math.min(...weights) - 1), maxW = Math.ceil(Math.max(...weights) + 1);
+    const minD = Math.min(...dates), maxD = Math.max(...dates);
+    const [minW, maxW] = weightDomain(weights);
     const x = (d) => pad.l + ((d - minD) / Math.max(1, maxD - minD)) * (w - pad.l - pad.r);
     const y = (kg) => h - pad.b - ((kg - minW) / Math.max(1, maxW - minW)) * (h - pad.t - pad.b);
     const visible = state.filter === "Todos" ? people : [state.filter];
+    const yTicks = buildTicks(minW, maxW, 6);
+    const xTicks = buildDateTicks(minD, maxD, 5);
+    const grid = [
+      ...yTicks.map((tick) => `<g><line x1="${pad.l}" y1="${y(tick).toFixed(1)}" x2="${w - pad.r}" y2="${y(tick).toFixed(1)}" class="grid-line"/><text x="${pad.l - 14}" y="${y(tick).toFixed(1)}" class="axis-label" text-anchor="end" dominant-baseline="middle">${tick.toFixed(1)}</text></g>`),
+      ...xTicks.map((tick) => `<g><line x1="${x(tick).toFixed(1)}" y1="${pad.t}" x2="${x(tick).toFixed(1)}" y2="${h - pad.b}" class="grid-line vertical"/><text x="${x(tick).toFixed(1)}" y="${h - 14}" class="axis-label" text-anchor="middle">${fmtShortDate(tick)}</text></g>`)
+    ].join("");
     const series = visible.map((p) => {
       const pts = records.filter((r) => r.person === p).map((r) => [x(parseDate(r.date)), y(Number(r.weight)), r]);
       if (!pts.length) return "";
       const line = pts.map((pt, i) => `${i ? "L" : "M"} ${pt[0].toFixed(1)} ${pt[1].toFixed(1)}`).join(" ");
-      const dots = pts.map((pt) => `<circle cx="${pt[0].toFixed(1)}" cy="${pt[1].toFixed(1)}" r="5" fill="${colors[p]}"><title>${p}: ${pt[2].weight.toFixed(1)} kg - ${fmt(pt[2].date)}</title></circle>`).join("");
-      return `<path d="${line}" fill="none" stroke="${colors[p]}" />${dots}`;
+      const dots = pts.map((pt) => `<circle cx="${pt[0].toFixed(1)}" cy="${pt[1].toFixed(1)}" r="5.2" fill="${colors[p]}" stroke="#18211f" stroke-width="2"><title>${p}: ${pt[2].weight.toFixed(1)} kg - ${fmt(pt[2].date)}</title></circle>`).join("");
+      return `<path d="${line}" class="series-line" fill="none" stroke="${colors[p]}" />${dots}`;
     }).join("");
-    el.chart.innerHTML = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><line x1="${pad.l}" y1="${pad.t}" x2="${pad.l}" y2="${h - pad.b}" stroke="#cfd7d1"/><line x1="${pad.l}" y1="${h - pad.b}" x2="${w - pad.r}" y2="${h - pad.b}" stroke="#cfd7d1"/><text x="14" y="${y(minW) + 4}" fill="#66706b" font-size="12">${minW}.0</text><text x="14" y="${y(maxW) + 4}" fill="#66706b" font-size="12">${maxW}.0</text>${series}</svg><div class="legend">${visible.map((p) => `<span><i style="background:${colors[p]}"></i>${p}</span>`).join("")}</div>`;
+    el.chart.innerHTML = `<svg viewBox="0 0 ${w} ${h}" role="presentation" aria-hidden="true">${grid}<line x1="${pad.l}" y1="${pad.t}" x2="${pad.l}" y2="${h - pad.b}" class="axis-line"/><line x1="${pad.l}" y1="${h - pad.b}" x2="${w - pad.r}" y2="${h - pad.b}" class="axis-line"/>${series}</svg><div class="legend">${visible.map((p) => `<span><i style="background:${colors[p]}"></i>${p}</span>`).join("")}</div>`;
   }
 
   function renderTable() {
@@ -269,11 +276,33 @@
     return Number.isFinite(parsed.getTime()) ? parsed.toISOString().slice(0, 10) : today();
   }
   function parseDate(value) { return Date.parse(`${normalizeDate(value)}T00:00:00`); }
+  function weightDomain(weights) {
+    const min = Math.min(...weights);
+    const max = Math.max(...weights);
+    const center = (min + max) / 2;
+    const span = Math.max(4, max - min + 1.6);
+    const low = Math.floor((center - span / 2) * 2) / 2;
+    const high = Math.ceil((center + span / 2) * 2) / 2;
+    return [low, high];
+  }
+  function buildTicks(min, max, count) {
+    const raw = (max - min) / Math.max(1, count - 1);
+    const step = raw <= .5 ? .5 : raw <= 1 ? 1 : raw <= 2 ? 2 : 5;
+    const first = Math.ceil(min / step) * step;
+    const ticks = [];
+    for (let v = first; v <= max + step / 2; v += step) ticks.push(Math.round(v * 10) / 10);
+    return ticks;
+  }
+  function buildDateTicks(min, max, count) {
+    if (min === max) return [min];
+    return Array.from({ length: count }, (_, i) => min + ((max - min) * i) / (count - 1));
+  }
   function validIso(value) {
     const parsed = Date.parse(value || "");
     return Number.isFinite(parsed) ? new Date(parsed).toISOString() : "";
   }
   function fmt(d) { return new Intl.DateTimeFormat("es-PE", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(`${normalizeDate(d)}T00:00:00`)); }
+  function fmtShortDate(ms) { return new Intl.DateTimeFormat("es-PE", { day: "2-digit", month: "short" }).format(new Date(ms)); }
   function signed(n) { const v = Math.round(n * 10) / 10; return `${v > 0 ? "+" : ""}${v.toFixed(1)}`; }
   function syncLabel(r) { return ({ startup: "Sincronizando al ingresar...", create: "Sincronizando nuevo registro...", annul: "Sincronizando anulacion...", endpoint: "Probando conexion...", manual: "Sincronizando..." })[r] || "Sincronizando..."; }
   function setSync(title, detail, type) { el.syncState.textContent = title; el.syncDetail.textContent = detail; el.syncDot.className = `sync-dot ${type}`; }
