@@ -12,7 +12,7 @@
   const colors = { Alberto: "#137c74", Carla: "#d95f73" };
   const $ = (id) => document.getElementById(id);
   const state = {
-    records: load().map((r) => ({ ...r, person: normalizePerson(r.person) })),
+    records: load().map(normalizeLocal),
     endpoint: localStorage.getItem(LS.endpoint) || "",
     filter: localStorage.getItem(LS.filter) || "Todos",
     syncing: false
@@ -168,7 +168,8 @@
   }
 
   function render() {
-    const active = state.records.filter((r) => r.status !== "annulled");
+    state.records = state.records.map(normalizeLocal);
+    const active = state.records.filter((r) => r.status !== "annulled" && Number.isFinite(Number(r.weight)));
     el.statCount.textContent = active.length;
     people.forEach((p) => renderPerson(p, active.filter((r) => r.person === p).sort(byDate)));
     renderChart(active.filter((r) => state.filter === "Todos" || r.person === state.filter).sort(byDate));
@@ -188,19 +189,20 @@
   }
 
   function renderChart(records) {
+    records = records.filter((r) => Number.isFinite(parseDate(r.date)) && Number.isFinite(Number(r.weight)));
     if (!records.length) {
       el.chart.innerHTML = '<div class="chart-empty">Registra un peso para ver la evolucion.</div>';
       return;
     }
     const w = 900, h = 340, pad = { l: 54, r: 28, t: 36, b: 46 };
-    const dates = records.map((r) => Date.parse(`${r.date}T00:00:00`));
-    const weights = records.map((r) => r.weight);
+    const dates = records.map((r) => parseDate(r.date));
+    const weights = records.map((r) => Number(r.weight));
     const minD = Math.min(...dates), maxD = Math.max(...dates), minW = Math.floor(Math.min(...weights) - 1), maxW = Math.ceil(Math.max(...weights) + 1);
     const x = (d) => pad.l + ((d - minD) / Math.max(1, maxD - minD)) * (w - pad.l - pad.r);
     const y = (kg) => h - pad.b - ((kg - minW) / Math.max(1, maxW - minW)) * (h - pad.t - pad.b);
     const visible = state.filter === "Todos" ? people : [state.filter];
     const series = visible.map((p) => {
-      const pts = records.filter((r) => r.person === p).map((r) => [x(Date.parse(`${r.date}T00:00:00`)), y(r.weight), r]);
+      const pts = records.filter((r) => r.person === p).map((r) => [x(parseDate(r.date)), y(Number(r.weight)), r]);
       if (!pts.length) return "";
       const line = pts.map((pt, i) => `${i ? "L" : "M"} ${pt[0].toFixed(1)} ${pt[1].toFixed(1)}`).join(" ");
       const dots = pts.map((pt) => `<circle cx="${pt[0].toFixed(1)}" cy="${pt[1].toFixed(1)}" r="5" fill="${colors[p]}"><title>${p}: ${pt[2].weight.toFixed(1)} kg - ${fmt(pt[2].date)}</title></circle>`).join("");
@@ -224,11 +226,37 @@
   function load() { try { return JSON.parse(localStorage.getItem(LS.records) || "[]"); } catch { return []; } }
   function save() { localStorage.setItem(LS.records, JSON.stringify(state.records)); }
   function cleanRecord(r) { return { id: r.id, person: r.person, date: r.date, weight: r.weight, note: r.note, status: r.status, createdAt: r.createdAt, updatedAt: r.updatedAt, deletedAt: r.deletedAt }; }
-  function normalizeRemote(r) { return { ...cleanRecord({ ...r, person: normalizePerson(r.person), weight: Number(r.weight || 0), note: r.note || "", status: r.status === "annulled" ? "annulled" : "active", createdAt: r.createdAt || new Date().toISOString(), updatedAt: r.updatedAt || new Date().toISOString(), deletedAt: r.deletedAt || "" }), pendingAction: "", syncedAt: new Date().toISOString() }; }
+  function normalizeRemote(r) { return { ...cleanRecord(normalizeLocal({ ...r, pendingAction: "" })), syncedAt: new Date().toISOString() }; }
+  function normalizeLocal(r) {
+    return {
+      ...r,
+      id: String(r.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`),
+      person: normalizePerson(r.person),
+      date: normalizeDate(r.date),
+      weight: Number(r.weight || 0),
+      note: String(r.note || ""),
+      status: r.status === "annulled" ? "annulled" : "active",
+      createdAt: validIso(r.createdAt) || new Date().toISOString(),
+      updatedAt: validIso(r.updatedAt) || validIso(r.createdAt) || new Date().toISOString(),
+      deletedAt: r.deletedAt || ""
+    };
+  }
   function normalizePerson(p) { return p === "Carla" || p === "Mi novia" ? "Carla" : "Alberto"; }
-  function byDate(a, b) { return `${a.date}-${a.createdAt}`.localeCompare(`${b.date}-${b.createdAt}`); }
+  function byDate(a, b) { return `${normalizeDate(a.date)}-${a.createdAt}`.localeCompare(`${normalizeDate(b.date)}-${b.createdAt}`); }
   function today() { return new Date().toISOString().slice(0, 10); }
-  function fmt(d) { return new Intl.DateTimeFormat("es-PE", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(`${d}T00:00:00`)); }
+  function normalizeDate(value) {
+    const raw = String(value || "").trim();
+    const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+    const parsed = new Date(raw);
+    return Number.isFinite(parsed.getTime()) ? parsed.toISOString().slice(0, 10) : today();
+  }
+  function parseDate(value) { return Date.parse(`${normalizeDate(value)}T00:00:00`); }
+  function validIso(value) {
+    const parsed = Date.parse(value || "");
+    return Number.isFinite(parsed) ? new Date(parsed).toISOString() : "";
+  }
+  function fmt(d) { return new Intl.DateTimeFormat("es-PE", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(`${normalizeDate(d)}T00:00:00`)); }
   function signed(n) { const v = Math.round(n * 10) / 10; return `${v > 0 ? "+" : ""}${v.toFixed(1)}`; }
   function syncLabel(r) { return ({ startup: "Sincronizando al ingresar...", create: "Sincronizando nuevo registro...", annul: "Sincronizando anulacion...", endpoint: "Probando conexion...", manual: "Sincronizando..." })[r] || "Sincronizando..."; }
   function setSync(title, detail, type) { el.syncState.textContent = title; el.syncDetail.textContent = detail; el.syncDot.className = `sync-dot ${type}`; }
