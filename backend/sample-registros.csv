@@ -1,0 +1,3 @@
+id,person,date,weight,note,status,createdAt,updatedAt,deletedAt
+ejemplo-alberto,Alberto,2026-06-07,78.4,Primer registro,active,2026-06-07T13:00:00.000Z,2026-06-07T13:00:00.000Z,
+ejemplo-carla,Carla,2026-06-07,62.1,Primer registro,active,2026-06-07T13:05:00.000Z,2026-06-07T13:05:00.000Z,
