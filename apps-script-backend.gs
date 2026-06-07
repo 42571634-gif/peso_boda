@@ -131,7 +131,7 @@ function normalizeRecord_(record) {
   return {
     id: String(record.id),
     person: normalizePerson_(record.person),
-    date: String(record.date).slice(0, 10),
+    date: normalizeDate_(record.date),
     weight: Number(record.weight),
     note: String(record.note || ""),
     status: record.status === "annulled" ? "annulled" : "active",
@@ -149,6 +149,20 @@ function normalizePerson_(person) {
   return "Alberto";
 }
 
+function normalizeDate_(value) {
+  if (value instanceof Date) {
+    return Utilities.formatDate(value, Session.getScriptTimeZone(), "yyyy-MM-dd");
+  }
+  const text = String(value || "");
+  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+  const parsed = new Date(text);
+  if (!isNaN(parsed.getTime())) {
+    return Utilities.formatDate(parsed, Session.getScriptTimeZone(), "yyyy-MM-dd");
+  }
+  throw new Error("Fecha invalida");
+}
+
 function recordToRow_(record) {
   return HEADERS.map((header) => record[header] || "");
 }
@@ -156,7 +170,11 @@ function recordToRow_(record) {
 function rowToRecord_(row) {
   const record = {};
   HEADERS.forEach((header, index) => {
-    record[header] = row[index] instanceof Date ? row[index].toISOString() : row[index];
+    if (row[index] instanceof Date && header === "date") {
+      record[header] = Utilities.formatDate(row[index], Session.getScriptTimeZone(), "yyyy-MM-dd");
+    } else {
+      record[header] = row[index] instanceof Date ? row[index].toISOString() : row[index];
+    }
   });
   record.weight = Number(record.weight);
   return record;
