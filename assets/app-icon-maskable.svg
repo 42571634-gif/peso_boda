@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Peso Boda 2027">
+  <defs>
+    <linearGradient id="bg" x1="48" x2="464" y1="40" y2="472" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fffdf8"/>
+      <stop offset=".48" stop-color="#e6f3ef"/>
+      <stop offset="1" stop-color="#ffe3dc"/>
+    </linearGradient>
+    <linearGradient id="scale" x1="160" x2="352" y1="316" y2="384" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#137c74"/>
+      <stop offset="1" stop-color="#d95f73"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="#137c74"/>
+  <circle cx="256" cy="256" r="228" fill="url(#bg)"/>
+  <path d="M98 319c48-63 98-83 151-58 43 20 75 16 112-11 31-23 58-26 80-9 23 18 27 50 8 79-24 37-75 54-154 54H121c-28 0-39-28-23-55Z" fill="#fff" opacity=".76"/>
+  <circle cx="194" cy="159" r="42" fill="#137c74"/>
+  <circle cx="318" cy="159" r="42" fill="#d95f73"/>
+  <path d="M141 294c10-60 28-90 53-90s43 30 53 90" fill="#fff7f2" stroke="#18211f" stroke-width="12" stroke-linecap="round"/>
+  <path d="M265 294c10-60 28-90 53-90s43 30 53 90" fill="#fff7f2" stroke="#18211f" stroke-width="12" stroke-linecap="round"/>
+  <path d="M181 319h150c23 0 41 18 41 41v18H140v-18c0-23 18-41 41-41Z" fill="url(#scale)"/>
+  <path d="M194 354h124" stroke="#fffdf8" stroke-width="12" stroke-linecap="round"/>
+  <path d="M256 319l25-40h-50l25 40Z" fill="#18211f"/>
+  <path d="M217 280h78" stroke="#18211f" stroke-width="13" stroke-linecap="round"/>
+  <path d="M409 113c18 0 18-24 0-24 0-18-24-18-24 0-18 0-18 24 0 24 0 18 24 18 24 0Z" fill="#c5902d"/>
+</svg>
