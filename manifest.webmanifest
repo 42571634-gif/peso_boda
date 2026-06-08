@@ -1,0 +1,25 @@
+{
+  "name": "Peso Boda 2027",
+  "short_name": "Peso Boda",
+  "description": "Registro privado de peso de Alberto y Carla.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f2ed",
+  "theme_color": "#137c74",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./assets/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/app-icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
